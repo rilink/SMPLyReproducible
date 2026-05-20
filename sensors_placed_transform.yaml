@@ -1,0 +1,26 @@
+smpl_path: smpl/basicmodel_neutral_lbs_10_207_0_v1.1.0.pkl
+sensors:
+- name: Imu_1
+  type: imu
+  vertex_idx: 2206
+  position_3d:
+  - 0.72241
+  - 0.25537
+  - -0.05669
+  orientation:
+    euler_xyz_deg:
+    - 0
+    - 0
+    - 30
+- name: Imu_2
+  type: imu
+  vertex_idx: 2235
+  position_3d:
+  - 0.72706
+  - 0.25289
+  - -0.02197
+  orientation:
+    euler_xyz_deg:
+    - 0
+    - 0
+    - 170
