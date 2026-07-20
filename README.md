@@ -6,16 +6,13 @@
 
 A persistent challenge in wearable sensing research is that sensor placement is rarely reproducible. Studies typically describe placement in natural language ("IMU attached to the dorsal side of the right wrist") — a description that is too ambiguous to reconstruct precisely across participants, experimenters, or labs. Even small differences in placement change the orientation of the sensor's local coordinate frame relative to the body, which directly affects accelerometer and gyroscope readings and makes cross-study comparisons unreliable.
 
-**SMPLy Reproducible** addresses this by using the [SMPL](https://smpl.is.tue.mpg.de/) parametric body model as a shared anatomical reference. Every sensor placement is stored as an exact vertex index on the SMPL mesh — a single integer that unambiguously encodes both position and surface orientation on a standardised 3-D body. A YAML configuration file captures the full placement (position, sensor type, in-plane rotation, body shape parameters), making a setup shareable, version-controllable, and recreatable by anyone who has the SMPL model.
+**SMPLy Reproducible** addresses this by using the [SMPL](https://smpl.is.tue.mpg.de/) parametric body model as a shared anatomical reference. Every sensor placement is stored as an exact vertex index on the SMPL mesh, a single integer that unambiguously encodes both position and surface orientation on a standardised 3-D body. A YAML configuration file captures the full placement (position, sensor type, in-plane rotation, body shape parameters), making a setup shareable, version-controllable, and recreatable by anyone who has the SMPL model.
 
-The toolkit also computes the **relative rotation** between any two placements of the same sensor type. This rotation matrix can be applied directly to raw IMU measurements (accelerometer and gyroscope) to express data from one mounting position as if the sensor had been placed at a reference position — enabling post-hoc alignment of data collected with slightly different placements.
+The toolkit also computes the **relative rotation** between any two placements of the same sensor type. This rotation matrix can be applied directly to raw IMU measurements (accelerometer and gyroscope) to express data from one mounting position as if the sensor had been placed at a reference position, enabling post-hoc alignment of data collected with slightly different placements.
 
 ---
 
 ## Setup
-
-Everything in this repo (including `RealWorld_experiments/`) is developed against the
-`smplyreproducible` conda environment:
 
 ```bash
 conda create -n smplyreproducible python=3.10
@@ -40,7 +37,7 @@ SmplyReproducible/
 ├── accel_sim.py                   # standalone demo verifying transform.py's rotation math
 ├── sensors_placed_transform.yaml  # example sensor placement config (output of the placement tools)
 ├── requirements.txt               # Python dependencies
-├── .gitignore                     # excludes smpl/*.pkl, __pycache__, venvs, etc.
+├── .gitignore                     # excludes smpl/*.pkl etc.
 ├── smpl/                          # SMPL model .pkl files — not tracked, download separately (see Setup)
 └── README.md
 ```
@@ -114,7 +111,7 @@ The `betas` field encodes the body shape used during placement. Including it in 
 1. **The SMPL-determined local frame (`R_local`).** `vertex_idx` fixes both the sensor's position *and* its surface normal — the direction pointing straight out of the skin at that point. `smpl_loader.local_frame_from_normal()` builds a right-handed frame from that normal alone: Z = the outward normal, X = the "most-upward" direction that still lies flat in the tangent plane, Y = Z × X. This is the frame you get with `euler_xyz_deg: [0, 0, 0]` — sensor lying flat on the skin, no rotation applied. Nothing about this frame is under your control except *where* you click.
 2. **Your in-plane twist (`R_user`).** `euler_xyz_deg` is converted to a rotation matrix (`scipy.spatial.transform.Rotation.from_euler("xyz", ..., degrees=True)`) and composed as `R_local @ R_user`. In practice only the Z component is ever non-zero (that's what the `h`/`j` rotate keys in `place_sensors.py` control, ±10° per press) — a pure rotation about the surface normal. This spins the sensor's in-plane axes (X, Y) around however you like while leaving the Z axis — the surface normal itself — completely unchanged, so the sensor always stays flat against the skin at the exact point you picked.
 
-In short: **where** you click determines the normal (and therefore two of the three orientation degrees of freedom for free); `euler_xyz_deg` only ever controls the remaining one — how the sensor is twisted around that normal. This is also precisely the $R_{A \leftarrow S}$ (sensor-to-segment orientation) used by `transform.py` to compute the relative rotation between two placements.
+In short: **where** you click determines the normal (and therefore two of the three orientation degrees of freedom for free); `euler_xyz_deg` only ever controls the remaining one — how the sensor is twisted around that normal. This is also precisely the $R_{S \leftarrow A}$ (sensor-to-segment orientation) used by `transform.py` to compute the relative rotation between two placements.
 
 ### `visualize.py` — review a placement
 Renders the SMPL body with all sensors from a YAML file. Sensors can be specified by `vertex_idx`, `position_3d`, or a named SMPL joint (`location: right_wrist`). Default file: `sensors_placed.yaml`.
