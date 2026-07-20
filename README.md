@@ -10,8 +10,6 @@ A persistent challenge in wearable sensing research is that sensor placement is 
 
 The toolkit also computes the **relative rotation** between any two placements of the same sensor type. This rotation matrix can be applied directly to raw IMU measurements (accelerometer and gyroscope) to express data from one mounting position as if the sensor had been placed at a reference position — enabling post-hoc alignment of data collected with slightly different placements.
 
-This work was developed for the [UbiComp Reproduce Workshop](https://reproducibility.ubicomp.org/).
-
 ---
 
 ## Setup
