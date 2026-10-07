@@ -1,6 +1,6 @@
 # SMPLy Reproducible
 
-> **Note:** An update of this repository is coming soon.
+> **Note:** An update of this repository is coming soon.  
 
 ## Motivation
 
