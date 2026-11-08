@@ -4,11 +4,15 @@ import pickle
 import sys
 import types
 import warnings
+from pathlib import Path
 
 import numpy as np
 import trimesh
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+TOOL_DIR = Path(__file__).resolve().parent
+PLACEMENTS_DIR = TOOL_DIR / "placements"
 
 # ── constants ─────────────────────────────────────────────────────────────────
 
@@ -24,12 +28,18 @@ JOINT_NAMES = [
 ]
 JOINT_IDX = {name: i for i, name in enumerate(JOINT_NAMES)}
 
-SENSOR_COLORS = {
-    "imu":     [0.86, 0.15, 0.25],
-    "camera":  [0.20, 0.55, 1.00],
-    "emg":     [0.20, 0.80, 0.45],
-    "ppg":     [0.65, 0.20, 0.88],
-    "default": [0.65, 0.65, 0.65],
+VEDO_COLORS = {
+    "imu":     "#db2640",
+    "camera":  "#3388ff",
+    "emg":     "#33cc72",
+    "ppg":     "#a632e0",
+    "default": "#aaaaaa",
+}
+AXIS_COLORS = ["#e02020", "#20c050", "#2060e0"]
+
+CAMERAS = {
+    "front": dict(pos=(0, 0.35, 2.8), focalPoint=(0, 0.35, 0), viewup=(0, 1, 0)),
+    "back":  dict(pos=(0, 0.35,-2.8), focalPoint=(0, 0.35, 0), viewup=(0, 1, 0)),
 }
 
 DEFAULT_SMPL = "smpl/basicmodel_neutral_lbs_10_207_0_v1.1.0.pkl"
@@ -37,7 +47,13 @@ DEFAULT_SMPL = "smpl/basicmodel_neutral_lbs_10_207_0_v1.1.0.pkl"
 # ── SMPL loader (no chumpy dependency) ───────────────────────────────────────
 
 def load_smpl(path):
-    """Load SMPL .pkl without requiring chumpy."""
+    """Load SMPL .pkl without requiring chumpy. Relative paths resolve
+    against tool/ (not CWD), so saved YAMLs' `smpl_path: smpl/...` works
+    regardless of where a script is invoked from."""
+    path = Path(path)
+    if not path.is_absolute():
+        path = TOOL_DIR / path
+
     class _Ch:
         def __init__(self, *a): self._a = a; self._s = {}
         def __setstate__(self, s): self._s = s if isinstance(s, dict) else {}

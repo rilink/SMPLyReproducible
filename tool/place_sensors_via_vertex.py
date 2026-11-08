@@ -6,8 +6,8 @@ sensors immediately and lets you click each one to select it, then rotate its
 local frame with h / j before saving.
 
 Usage:
-    python place_sensors_via_vertex.py 4523 1234 5678
-    python place_sensors_via_vertex.py 4523 1234 --output my_setup.yaml --view front
+    python tool/place_sensors_via_vertex.py 4523 1234 5678
+    python tool/place_sensors_via_vertex.py 4523 1234 --output my_setup.yaml --view front
 
 Controls:
     Left-click a sensor     select it  (turns amber)
@@ -19,6 +19,7 @@ Controls:
 
 import argparse
 import warnings
+from pathlib import Path
 
 import numpy as np
 import yaml
@@ -26,28 +27,16 @@ from scipy.spatial.transform import Rotation
 from vedo import Plotter, Mesh as VMesh, Sphere as VSphere, Cylinder as VCylinder, Text2D
 
 from smpl_loader import (load_smpl, build_avatar, local_frame_from_normal,
-                         DEFAULT_SMPL, DEFAULT_BETAS)
+                         DEFAULT_SMPL, DEFAULT_BETAS, VEDO_COLORS, AXIS_COLORS,
+                         CAMERAS, PLACEMENTS_DIR)
 
 warnings.filterwarnings("ignore")
 
-_VEDO_COLORS = {
-    "imu":     "#db2640",
-    "camera":  "#3388ff",
-    "emg":     "#33cc72",
-    "ppg":     "#a632e0",
-    "default": "#aaaaaa",
-}
-_AXIS_COLORS  = ["#e02020", "#20c050", "#2060e0"]
 _COL_SELECTED = "#f5a00a"
 
 FRAME_SCALE = 0.10
 SPHERE_R    = 0.022
 ROT_STEP    = 10
-
-_CAMERAS = {
-    "front": dict(pos=(0, 0.35, 2.8), focalPoint=(0, 0.35, 0), viewup=(0, 1, 0)),
-    "back":  dict(pos=(0, 0.35,-2.8), focalPoint=(0, 0.35, 0), viewup=(0, 1, 0)),
-}
 
 _TYPE_LABEL = {
     "imu": "IMU (red)", "camera": "Camera (blue)",
@@ -58,7 +47,7 @@ _TYPE_LABEL = {
 def _make_sticks(pos, R_frame):
     return [
         VCylinder(pos=[pos.tolist(), (pos + R_frame[:, i] * FRAME_SCALE).tolist()],
-                  r=0.004, c=_AXIS_COLORS[i], cap=True)
+                  r=0.004, c=AXIS_COLORS[i], cap=True)
         for i in range(3)
     ]
 
@@ -84,7 +73,7 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("vertex_ids", nargs="+", type=int,
                         help="SMPL vertex indices")
-    parser.add_argument("--output", default="sensors_placed.yaml")
+    parser.add_argument("--output", default=str(PLACEMENTS_DIR / "sensors_placed.yaml"))
     parser.add_argument("--smpl",   default=DEFAULT_SMPL)
     parser.add_argument("--view",   choices=["front", "back"])
     args = parser.parse_args()
@@ -134,7 +123,7 @@ def main():
     actors = []   # each entry: [sphere, stick0, stick1, stick2]
     for s in sensors:
         pos    = np.array(s["position_3d"], dtype=float)
-        col    = _VEDO_COLORS.get(s["type"], "#aaaaaa")
+        col    = VEDO_COLORS.get(s["type"], "#aaaaaa")
         sphere = VSphere(pos, r=SPHERE_R, c=col, alpha=1.0)
         sticks = _make_sticks(pos, _frame(s))
         plt.add(sphere, *sticks)
@@ -161,7 +150,7 @@ def main():
     def _select(idx):
         # restore previous sphere colour
         prev = state["sel"]
-        actors[prev][0].c(_VEDO_COLORS.get(sensors[prev]["type"], "#aaaaaa"))
+        actors[prev][0].c(VEDO_COLORS.get(sensors[prev]["type"], "#aaaaaa"))
         state["sel"] = idx
         actors[idx][0].c(_COL_SELECTED)
         hud.text(_hud_text(sensors, idx))
@@ -206,7 +195,7 @@ def main():
             s["type"] = t
             count = sum(1 for x in sensors if x["type"] == t)
             s["name"] = f"{t.capitalize()}_{count}"
-            actors[idx][0].c(_VEDO_COLORS.get(t, "#aaaaaa"))  # show new type colour
+            actors[idx][0].c(VEDO_COLORS.get(t, "#aaaaaa"))  # show new type colour
 
         elif k == "s":
             _save(sensors, args.output, args.smpl)
@@ -220,7 +209,7 @@ def main():
     plt.add_callback("LeftButtonPress", on_click)
     plt.add_callback("key press",       on_key)
 
-    cam = _CAMERAS.get(args.view)
+    cam = CAMERAS.get(args.view)
     plt.show(camera=cam) if cam else plt.show(viewup="y", zoom=1.2)
 
     if not state["saved"]:
@@ -228,11 +217,13 @@ def main():
 
 
 def _save(sensors, out_path, smpl_path):
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     cfg = {"smpl_path": smpl_path, "sensors": sensors}
     with open(out_path, "w") as f:
         yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
     print(f"\nSaved {len(sensors)} sensor(s) to '{out_path}'")
-    print(f"Visualise with:  python visualize.py {out_path}")
+    print(f"Visualise with:  python tool/visualize.py {out_path}")
 
 
 if __name__ == "__main__":

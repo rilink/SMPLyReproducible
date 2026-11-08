@@ -10,8 +10,8 @@ i.e. apply R to measurements recorded at placement B to express them
 as if the sensor had been placed at A.
 
 Usage:
-    python transform.py my_setup.yaml           # interactive: click A then B
-    python transform.py my_setup.yaml 0 2       # non-interactive: transform sensor 2 -> sensor 0
+    python tool/transform.py my_setup.yaml           # interactive: click A then B
+    python tool/transform.py my_setup.yaml 0 2       # non-interactive: transform sensor 2 -> sensor 0
 """
 
 import argparse
@@ -23,7 +23,7 @@ from scipy.spatial.transform import Rotation
 
 from smpl_loader import (load_smpl, build_avatar, local_frame_from_normal,
                          surface_pos_and_frame, JOINT_IDX,
-                         DEFAULT_SMPL, DEFAULT_BETAS)
+                         DEFAULT_SMPL, DEFAULT_BETAS, VEDO_COLORS, AXIS_COLORS)
 
 
 # ── sensor geometry ───────────────────────────────────────────────────────────
@@ -89,14 +89,6 @@ def _compute_rotation(idx_a, idx_b, sensors, verts, tm_mesh, joints=None):
 
 # ── interactive picker ────────────────────────────────────────────────────────
 
-_VEDO_TYPE_COLORS = {
-    "imu":     "#db2640",
-    "camera":  "#3388ff",
-    "emg":     "#33cc72",
-    "ppg":     "#a632e0",
-    "default": "#aaaaaa",
-}
-_AXIS_COLORS  = ["#e02020", "#20c050", "#2060e0"]
 _FRAME_SCALE  = 0.09
 _SPHERE_R     = 0.024
 _COL_A        = "#f5a00a"   # amber  — reference sensor A
@@ -106,11 +98,11 @@ _COL_B        = "#2255cc"   # blue   — sensor B
 def _make_glyph(pos, R_frame, stype, plt):
     """Add sphere + RGB frame sticks to plotter; return (sphere, [sticks])."""
     from vedo import Sphere as VSphere, Cylinder as VCylinder
-    col    = _VEDO_TYPE_COLORS.get(stype, _VEDO_TYPE_COLORS["default"])
+    col    = VEDO_COLORS.get(stype, VEDO_COLORS["default"])
     sphere = VSphere(pos, r=_SPHERE_R, c=col, alpha=1.0)
     sticks = [
         VCylinder(pos=[pos.tolist(), (pos + R_frame[:, i] * _FRAME_SCALE).tolist()],
-                  r=0.004, c=_AXIS_COLORS[i], cap=True)
+                  r=0.004, c=AXIS_COLORS[i], cap=True)
         for i in range(3)
     ]
     plt.add(sphere, *sticks)
@@ -145,7 +137,7 @@ def _interactive(sensors, verts, faces, tm_mesh, joints=None):
         stype = s.get("type", "default").lower()
         sphere, _ = _make_glyph(pos, R, stype, plt)
         spheres.append(sphere)
-        state["type_cols"].append(_VEDO_TYPE_COLORS.get(stype, _VEDO_TYPE_COLORS["default"]))
+        state["type_cols"].append(VEDO_COLORS.get(stype, VEDO_COLORS["default"]))
 
         lpos = (pos + np.array([0.05, 0.03, 0.0])).tolist()
         plt.add(Text3D(f"[{i}] {s['name']}", pos=lpos, s=0.011, c="k2"))

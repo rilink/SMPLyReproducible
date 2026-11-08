@@ -16,11 +16,12 @@ Controls:
   q  → quit without saving
 
 Usage:
-    python place_sensors.py [output.yaml] [--smpl PATH]
+    python tool/place_sensors.py [output.yaml] [--smpl PATH]
 """
 
 import argparse
 import warnings
+from pathlib import Path
 
 import numpy as np
 import yaml
@@ -28,17 +29,10 @@ from scipy.spatial.transform import Rotation
 from vedo import Plotter, Mesh as VMesh, Sphere as VSphere, Cylinder as VCylinder, Text2D
 
 from smpl_loader import (load_smpl, build_avatar, local_frame_from_normal,
-                         DEFAULT_SMPL, DEFAULT_BETAS)
+                         DEFAULT_SMPL, DEFAULT_BETAS, VEDO_COLORS, AXIS_COLORS,
+                         CAMERAS, PLACEMENTS_DIR)
 
 warnings.filterwarnings("ignore")
-
-_VEDO_COLORS = {
-    "imu":     "#db2640",
-    "camera":  "#3388ff",
-    "emg":     "#33cc72",
-    "ppg":     "#a632e0",
-    "default": "#aaaaaa",
-}
 
 FRAME_SCALE = 0.10
 SPHERE_R    = 0.022
@@ -54,12 +48,11 @@ _TYPE_LABEL = {
 
 def _sensor_actors(pos, R_frame, stype):
     """Sphere + 3 axis sticks. R_frame columns = X/Y/Z axes in world coords."""
-    col = _VEDO_COLORS.get(stype, "#aaaaaa")
+    col = VEDO_COLORS.get(stype, "#aaaaaa")
     sphere = VSphere(pos, r=SPHERE_R, c=col, alpha=1.0)
-    axis_colors = ["#e02020", "#20c050", "#2060e0"]
     sticks = [
         VCylinder(pos=[pos, pos + R_frame[:, i] * FRAME_SCALE],
-                  r=0.004, c=axis_colors[i], cap=True)
+                  r=0.004, c=AXIS_COLORS[i], cap=True)
         for i in range(3)
     ]
     return [sphere] + sticks
@@ -92,7 +85,8 @@ def _hud_text(stype, n_placed, z_deg):
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("output", nargs="?", default="sensors_placed.yaml")
+    parser.add_argument("output", nargs="?",
+                        default=str(PLACEMENTS_DIR / "sensors_placed.yaml"))
     parser.add_argument("--smpl", default=DEFAULT_SMPL)
     parser.add_argument("--view", choices=["front", "back"],
                         help="Open with front or back camera (default: perspective)")
@@ -139,10 +133,9 @@ def main():
         for a in state["actors"][-1][1:]:
             plt.remove(a)
 
-        axis_colors = ["#e02020", "#20c050", "#2060e0"]
         new_sticks = [
             VCylinder(pos=[pos.tolist(), (pos + R_frame[:, i] * FRAME_SCALE).tolist()],
-                      r=0.004, c=axis_colors[i], cap=True)
+                      r=0.004, c=AXIS_COLORS[i], cap=True)
             for i in range(3)
         ]
         state["actors"][-1] = [state["actors"][-1][0]] + new_sticks
@@ -216,11 +209,7 @@ def main():
     plt.add_callback("key press",       on_key)
 
     print("\nControls:  click=place  h/j=rotate sensor  ↑↓=opacity  7/8=background  k=shiny  s=save  q=quit\n")
-    _CAMERAS = {
-        "front": dict(pos=(0, 0.35, 2.8), focalPoint=(0, 0.35, 0), viewup=(0, 1, 0)),
-        "back":  dict(pos=(0, 0.35,-2.8), focalPoint=(0, 0.35, 0), viewup=(0, 1, 0)),
-    }
-    cam = _CAMERAS.get(args.view)
+    cam = CAMERAS.get(args.view)
     if cam:
         plt.show(camera=cam)
     else:
@@ -231,11 +220,13 @@ def main():
 
 
 def _save(sensors, out_path, smpl_path):
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     cfg = {"smpl_path": smpl_path, "sensors": sensors}
     with open(out_path, "w") as f:
         yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
     print(f"\nSaved {len(sensors)} sensor(s) to '{out_path}'")
-    print(f"Visualise with:  python visualize.py {out_path}")
+    print(f"Visualise with:  python tool/visualize.py {out_path}")
 
 
 if __name__ == "__main__":

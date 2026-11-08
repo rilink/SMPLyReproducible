@@ -6,9 +6,9 @@ console and drops a small marker on the mesh.  Use this to find vertex_idx
 values for manual YAML sensor configs.
 
 Usage:
-    python pick_vertex.py
-    python pick_vertex.py --smpl smpl/your_model.pkl
-    python pick_vertex.py --view front
+    python tool/pick_vertex.py
+    python tool/pick_vertex.py --smpl smpl/your_model.pkl
+    python tool/pick_vertex.py --view front
 """
 
 import argparse
@@ -18,14 +18,9 @@ import numpy as np
 from vedo import Plotter, Mesh as VMesh, Sphere as VSphere, Cylinder as VCylinder, Text2D
 
 from smpl_loader import (load_smpl, build_avatar, local_frame_from_normal,
-                         DEFAULT_SMPL, DEFAULT_BETAS)
+                         DEFAULT_SMPL, DEFAULT_BETAS, CAMERAS, AXIS_COLORS)
 
 warnings.filterwarnings("ignore")
-
-_CAMERAS = {
-    "front": dict(pos=(0, 0.35, 2.8), focalPoint=(0, 0.35, 0), viewup=(0, 1, 0)),
-    "back":  dict(pos=(0, 0.35,-2.8), focalPoint=(0, 0.35, 0), viewup=(0, 1, 0)),
-}
 
 
 def main():
@@ -42,7 +37,6 @@ def main():
     faces              = model["f"].astype(np.int32)
 
     FRAME_SCALE  = 0.10
-    AXIS_COLORS  = ["#e02020", "#20c050", "#2060e0"]
 
     plt = Plotter(title="SMPLy Reproducible -- Vertex Picker",
                   bg="white", size=(900, 900))
@@ -91,7 +85,7 @@ def main():
 
     plt.add_callback("LeftButtonPress", on_click)
 
-    cam = _CAMERAS.get(args.view)
+    cam = CAMERAS.get(args.view)
     if cam:
         plt.show(camera=cam)
     else:

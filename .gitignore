@@ -22,3 +22,18 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Personal notes
+ideas.md
+
+# Local scratch / not part of the public release
+archive/
+
+# Generated dataset artifacts
+RealWorld_experiments/**/processed/
+
+# Trained model checkpoints
+RealWorld_experiments/**/checkpoints/
+
+# Cached model features
+RealWorld_experiments/models/processed/

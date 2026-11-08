@@ -4,3 +4,13 @@ trimesh
 rtree
 vedo
 pyyaml
+pandas
+matplotlib
+jupyter
+scikit-learn
+torch
+lightgbm
+plotly
+kaleido
+pypdf
+Pillow
