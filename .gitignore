@@ -30,10 +30,16 @@ ideas.md
 archive/
 
 # Generated dataset artifacts
-RealWorld_experiments/**/processed/
+experiments/**/processed/
 
 # Trained model checkpoints
-RealWorld_experiments/**/checkpoints/
+experiments/**/checkpoints/
 
 # Cached model features
-RealWorld_experiments/models/processed/
+experiments/models/processed/
+
+# Before/after snapshots kept locally when rerunning the pipeline from scratch
+experiments/**/*_old/
+
+# Dev run logs
+*.log

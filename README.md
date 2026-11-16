@@ -93,7 +93,7 @@ python tool/place_sensors.py tool/placements/my_setup.yaml --view back
 Keyboard: `i/c/e/g` sensor type · `h/j` rotate ±10° · `u` undo · `↑↓` opacity · `7/8` background · `s` save+quit · `q` quit.
 
 ### `place_sensors_via_vertex.py` — place by vertex index
-Alternative, also step 1, placement tool for when you already know the vertex IDs (e.g. from `pick_vertex.py` or a vertex mask from a model). Pass them on the command line; sensors appear immediately so you can fine-tune orientation and type before saving — same exact-documentation capability as `place_sensors.py`, driven by known indices instead of clicks.
+Alternative, also step 1, placement tool for when you already know the vertex IDs (e.g. from `pick_vertex.py` or a vertex mask from a model). Pass them on the command line. Sensors appear immediately so you can fine-tune orientation and type before saving — same exact-documentation capability as `place_sensors.py`, driven by known indices instead of clicks.
 
 | Flag | Default | Description |
 |---|---|---|
@@ -133,7 +133,7 @@ Refer to the paper for more details.
 1. **The SMPL-determined local frame (`R_local`).** `vertex_idx` fixes both the sensor's position *and* its surface normal — the direction pointing straight out of the skin at that point. `smpl_loader.local_frame_from_normal()` builds a right-handed frame from that normal alone: Z = the outward normal, X = the "most-upward" direction that still lies flat in the tangent plane, Y = Z × X. This is the frame you get with `euler_xyz_deg: [0, 0, 0]` — sensor lying flat on the skin, no rotation applied. This frame is automatically set with the choice of a sensor location.
 2. **Your in-plane twist (`R_user`).** `euler_xyz_deg` is converted to a rotation matrix (`scipy.spatial.transform.Rotation.from_euler("xyz", ..., degrees=True)`) and composed as `R_local @ R_user`. In practice only the Z component is ever non-zero (that's what the `h`/`j` rotate keys control, ±10° per press) — a pure rotation about the surface normal. This spins the sensor's in-plane axes (X, Y) around however you like while leaving the Z axis — the surface normal itself — completely unchanged, so the sensor always stays flat against the skin at the exact point you picked.
 
-In short: **where** you click determines the normal (and therefore two of the three orientation degrees of freedom for free); `euler_xyz_deg` only ever controls the remaining one — how the sensor is twisted around that normal. This is also precisely the $R_{S \leftarrow A}$ (sensor-to-segment orientation) used by `transform.py` to compute the relative rotation between two placements. If the sensor frame is not supposed to have one axis that is aligned with the skin normal, this has to be added.
+In short: **where** you click determines the normal (and therefore two of the three orientation degrees of freedom for free). `euler_xyz_deg` only ever controls the remaining one — how the sensor is twisted around that normal. This is also precisely the $R_{S \leftarrow A}$ (sensor-to-segment orientation) used by `transform.py` to compute the relative rotation between two placements. If the sensor frame is not supposed to have one axis that is aligned with the skin normal, this has to be added.
 
 ### `visualize.py` — review a placement, or export it
 Renders the SMPL body with all sensors from a YAML file. Sensors can be specified by `vertex_idx`, `position_3d`, or a named SMPL joint (`location: right_wrist`). Step 2 in the workflow.
@@ -144,8 +144,8 @@ Renders the SMPL body with all sensors from a YAML file. Sensors can be specifie
 |---|---|---|
 | `config` (positional) | `tool/placements/sensors_placed.yaml` | Sensor placement YAML to load. |
 | `--view {front,back}` | free perspective | Camera view (interactive mode only). |
-| `--save-pdf` | off | Skip the interactive window; render front+back offscreen and save each to PDF (and PNG). |
-| `--output-dir OUTPUT_DIR` | `.` | Directory to save PDFs/PNGs into; used with `--save-pdf`. |
+| `--save-pdf` | off | Skip the interactive window, render front+back offscreen and save each to PDF (and PNG). |
+| `--output-dir OUTPUT_DIR` | `.` | Directory to save PDFs/PNGs into, used with `--save-pdf`. |
 
 ```bash
 python tool/visualize.py
@@ -197,3 +197,16 @@ jupyter notebook tool/verify_transform.ipynb
    - `python tool/place_sensors_via_vertex.py 1961 5424 ... --output tool/placements/my_setup.yaml` — place at known indices
 3. **Review**: `python tool/visualize.py tool/placements/my_setup.yaml` (or `--save-pdf` to export without a window)
 4. **Get relative rotation**: `python tool/transform.py tool/placements/my_setup.yaml` → copy **R** into your processing pipeline
+
+## Example
+
+<p align="center">
+  <img src="figures/transform_example.png" width="640" alt="Real RealWorld forearm accelerometer/gyroscope signal (top) vs. the same motion synthesized at a different placement (bottom)">
+</p>
+<p align="center"><em>
+Applying the rotation obtained by <code>tool/transform.py</code> to real sensor
+data: a real RealWorld forearm recording's accelerometer and gyroscope signal
+(top: A) next to the same physical motion synthesized at a different
+placement (bottom: B). See <code>experiments/</code> for the full empirical
+validation this example is drawn from.
+</em></p>
